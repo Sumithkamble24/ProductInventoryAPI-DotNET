@@ -5,11 +5,9 @@ namespace ProductInventoryAPI.Models
     public class Product
     {
         public int Id { get; set; }
-
         [Required(ErrorMessage = "Product name is required.")]
         [MaxLength(100)]
         public string Name { get; set; } = string.Empty;
-
         [Required(ErrorMessage = "Category is required.")]
         [MaxLength(50)]
         public string Category { get; set; } = string.Empty;

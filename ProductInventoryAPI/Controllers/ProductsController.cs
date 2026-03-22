@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using ProductInventoryAPI.Data;
 using ProductInventoryAPI.Models;
-
 namespace ProductInventoryAPI.Controllers
 {
     [ApiController]
@@ -16,7 +15,6 @@ namespace ProductInventoryAPI.Controllers
             _context = context;
         }
 
-        // Get all products with optional filter and sort
         [HttpGet]
         public async Task<IActionResult> GetAllProducts(
             [FromQuery] string? category = null,
@@ -26,13 +24,11 @@ namespace ProductInventoryAPI.Controllers
             {
                 var products = await _context.Products.ToListAsync();
 
-                // filter by category if provided
                 if (!string.IsNullOrWhiteSpace(category))
                 {
                     products = products.Where(p => p.Category.ToLower() == category.ToLower()).ToList();
                 }
 
-                // sort by price
                 if (sortByPrice == "asc")
                 {
                     products = products.OrderBy(p => p.Price).ToList();
@@ -50,7 +46,6 @@ namespace ProductInventoryAPI.Controllers
             }
         }
 
-        // Get out of stock products
         [HttpGet("out-of-stock")]
         public async Task<IActionResult> GetOutOfStockProducts()
         {
@@ -64,7 +59,7 @@ namespace ProductInventoryAPI.Controllers
             return Ok(outOfStock);
         }
 
-        // Get product by id
+        
         [HttpGet("{id}")]
         public async Task<IActionResult> GetProductById(int id)
         {
@@ -79,7 +74,6 @@ namespace ProductInventoryAPI.Controllers
             return Ok(product);
         }
 
-        // Add new product
         [HttpPost]
         public async Task<IActionResult> AddProduct([FromBody] Product newProduct)
         {
@@ -92,7 +86,7 @@ namespace ProductInventoryAPI.Controllers
             return CreatedAtAction(nameof(GetProductById), new { id = newProduct.Id }, newProduct);
         }
 
-        // Update existing product
+    
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product updatedProduct)
         {
@@ -107,7 +101,6 @@ namespace ProductInventoryAPI.Controllers
             if (existing == null)
                 return NotFound($"Product with ID {id} not found.");
 
-            // update the fields
             existing.Name = updatedProduct.Name;
             existing.Category = updatedProduct.Category;
             existing.Price = updatedProduct.Price;
@@ -117,7 +110,6 @@ namespace ProductInventoryAPI.Controllers
             return Ok(existing);
         }
 
-        // Delete product by id
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
