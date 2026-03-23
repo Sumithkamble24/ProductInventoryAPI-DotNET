@@ -1,11 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProductInventoryAPI.Data;
 using ProductInventoryAPI.Models;
+using System.Security.Claims;
+
+
 namespace ProductInventoryAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class ProductsController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -15,30 +20,45 @@ namespace ProductInventoryAPI.Controllers
             _context = context;
         }
 
+        // GET ALL PRODUCTS (WITH FILTER + SORT + BONUS)
         [HttpGet]
+        [Authorize(Roles = "Admin,Manager,Viewer")]
         public async Task<IActionResult> GetAllProducts(
             [FromQuery] string? category = null,
             [FromQuery] string? sortByPrice = null)
         {
             try
             {
-                var products = await _context.Products.ToListAsync();
+                var query = _context.Products.AsQueryable();
 
+                // FILTER
                 if (!string.IsNullOrWhiteSpace(category))
                 {
-                    products = products.Where(p => p.Category.ToLower() == category.ToLower()).ToList();
+                    query = query.Where(p => p.Category.ToLower() == category.ToLower());
                 }
 
+                // SORT
                 if (sortByPrice == "asc")
                 {
-                    products = products.OrderBy(p => p.Price).ToList();
+                    query = query.OrderBy(p => p.Price);
                 }
                 else if (sortByPrice == "desc")
                 {
-                    products = products.OrderByDescending(p => p.Price).ToList();
+                    query = query.OrderByDescending(p => p.Price);
                 }
 
-                return Ok(products);
+                var products = await query.ToListAsync();
+
+                // BONUS
+                var calledBy = User.FindFirst(ClaimTypes.Name)?.Value;
+                var callerRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+                return Ok(new
+                {
+                    calledBy,
+                    callerRole,
+                    data = products
+                });
             }
             catch (Exception ex)
             {
@@ -46,21 +66,24 @@ namespace ProductInventoryAPI.Controllers
             }
         }
 
+        // GET OUT OF STOCK
         [HttpGet("out-of-stock")]
+        [Authorize(Roles = "Admin,Manager,Viewer")]
         public async Task<IActionResult> GetOutOfStockProducts()
         {
             var outOfStock = await _context.Products
                 .Where(p => p.StockQuantity == 0)
                 .ToListAsync();
 
-            if (outOfStock == null || outOfStock.Count == 0)
+            if (!outOfStock.Any())
                 return NotFound("No out of stock products found.");
 
             return Ok(outOfStock);
         }
 
-        
+        // GET BY ID
         [HttpGet("{id}")]
+        [Authorize(Roles = "Admin,Manager,Viewer")]
         public async Task<IActionResult> GetProductById(int id)
         {
             if (id <= 0)
@@ -74,7 +97,9 @@ namespace ProductInventoryAPI.Controllers
             return Ok(product);
         }
 
+        // CREATE PRODUCT
         [HttpPost]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> AddProduct([FromBody] Product newProduct)
         {
             if (!ModelState.IsValid)
@@ -86,8 +111,9 @@ namespace ProductInventoryAPI.Controllers
             return CreatedAtAction(nameof(GetProductById), new { id = newProduct.Id }, newProduct);
         }
 
-    
+        // UPDATE PRODUCT
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product updatedProduct)
         {
             if (id <= 0)
@@ -107,10 +133,13 @@ namespace ProductInventoryAPI.Controllers
             existing.StockQuantity = updatedProduct.StockQuantity;
 
             await _context.SaveChangesAsync();
+
             return Ok(existing);
         }
 
+        // DELETE PRODUCT (ADMIN ONLY)
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
             if (id <= 0)
