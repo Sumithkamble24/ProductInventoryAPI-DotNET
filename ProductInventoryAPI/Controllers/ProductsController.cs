@@ -20,7 +20,7 @@ namespace ProductInventoryAPI.Controllers
             _context = context;
         }
 
-        // GET ALL PRODUCTS (WITH FILTER + SORT + BONUS)
+
         [HttpGet]
         [Authorize(Roles = "Admin,Manager,Viewer")]
         public async Task<IActionResult> GetAllProducts(
@@ -31,13 +31,11 @@ namespace ProductInventoryAPI.Controllers
             {
                 var query = _context.Products.AsQueryable();
 
-                // FILTER
                 if (!string.IsNullOrWhiteSpace(category))
                 {
                     query = query.Where(p => p.Category.ToLower() == category.ToLower());
                 }
 
-                // SORT
                 if (sortByPrice == "asc")
                 {
                     query = query.OrderBy(p => p.Price);
@@ -49,7 +47,6 @@ namespace ProductInventoryAPI.Controllers
 
                 var products = await query.ToListAsync();
 
-                // BONUS
                 var calledBy = User.FindFirst(ClaimTypes.Name)?.Value;
                 var callerRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
@@ -66,7 +63,6 @@ namespace ProductInventoryAPI.Controllers
             }
         }
 
-        // GET OUT OF STOCK
         [HttpGet("out-of-stock")]
         [Authorize(Roles = "Admin,Manager,Viewer")]
         public async Task<IActionResult> GetOutOfStockProducts()
@@ -81,7 +77,6 @@ namespace ProductInventoryAPI.Controllers
             return Ok(outOfStock);
         }
 
-        // GET BY ID
         [HttpGet("{id}")]
         [Authorize(Roles = "Admin,Manager,Viewer")]
         public async Task<IActionResult> GetProductById(int id)
@@ -97,7 +92,6 @@ namespace ProductInventoryAPI.Controllers
             return Ok(product);
         }
 
-        // CREATE PRODUCT
         [HttpPost]
         [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> AddProduct([FromBody] Product newProduct)
@@ -111,7 +105,6 @@ namespace ProductInventoryAPI.Controllers
             return CreatedAtAction(nameof(GetProductById), new { id = newProduct.Id }, newProduct);
         }
 
-        // UPDATE PRODUCT
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product updatedProduct)
@@ -137,7 +130,6 @@ namespace ProductInventoryAPI.Controllers
             return Ok(existing);
         }
 
-        // DELETE PRODUCT (ADMIN ONLY)
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteProduct(int id)

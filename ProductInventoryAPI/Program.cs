@@ -16,7 +16,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     )
 );
 
-// JWT
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var keyString = jwtSettings["Key"];
 
@@ -48,7 +47,6 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// ✅ Swagger WITH AUTH BUTTON
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
